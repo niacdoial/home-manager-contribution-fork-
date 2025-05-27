@@ -10,6 +10,7 @@ let
     mkOptionDefault
     mkIf
     mkOption
+    optional
     types
     ;
 
@@ -162,9 +163,18 @@ in
         (lib.mapAttrs' (name: file: lib.nameValuePair "${cfg.configHome}/${name}" file) cfg.configFile)
         (lib.mapAttrs' (name: file: lib.nameValuePair "${cfg.dataHome}/${name}" file) cfg.dataFile)
         (lib.mapAttrs' (name: file: lib.nameValuePair "${cfg.stateHome}/${name}" file) cfg.stateFile)
-        { "${cfg.cacheHome}/.keep".text = ""; }
-        { "${cfg.stateHome}/.keep".text = ""; }
-      ];
+      ]
+      ++ (optional (
+          ! lib.lists.any
+          (e: e.enable && (lib.string.hasPrefix e.target cfg.cacheHome))
+          (lib.mapAttrsToList (n: v: v) config.home.file)
+        ) { "${cfg.cacheHome}/.keep".text = ""; })
+      ++ (optional (
+          ! lib.lists.any
+          (e: e.enable && (lib.string.hasPrefix e.target cfg.stateHome))
+          (lib.mapAttrsToList (n: v: v) config.home.file)
+        ) { "${cfg.stateHome}/.keep".text = ""; })
+      ;
     }
   ];
 }
